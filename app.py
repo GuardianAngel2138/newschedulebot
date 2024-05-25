@@ -3,10 +3,10 @@ import threading
 import time
 import requests
 from datetime import datetime
-import config
+import os
 
 app = Flask(__name__)
-bot_token = config.API_KEY
+bot_token = os.environ.get('API_TOKEN')
 
 send_messages = False
 restricted_groups = []
@@ -133,4 +133,5 @@ def message_scheduler(message, groups, delay, restrict_permissions, disable_web_
         restore_user_permissions(group)
 
 if __name__ == '__main__':
-    app.run(debug=False)
+    app.run(debug=False, port=int(os.environ.get('PORT', 5000)))
+
