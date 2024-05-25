@@ -133,4 +133,4 @@ def message_scheduler(message, groups, delay, restrict_permissions, disable_web_
         restore_user_permissions(group)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False)
