@@ -59,7 +59,7 @@ def restore_permissions():
     return jsonify(status="Permissions restored")
 
 def send_message(chat_id, text, disable_web_page_preview=False, pin_message=False):
-    url = f'https://api.telegram.org/bot{API_TOKEN}/sendMessage'
+    url = f'https://api.telegram.org/bot6833683094:AAFEfz8GwEw6hphFe59CaHRUzI_Nql3HGMU/sendMessage'
     payload = {
         'chat_id': chat_id,
         'text': text,
@@ -74,7 +74,7 @@ def send_message(chat_id, text, disable_web_page_preview=False, pin_message=Fals
             pin_message_to_chat(chat_id, message_id)
 
 def pin_message_to_chat(chat_id, message_id):
-    url = f'https://api.telegram.org/bot{API_TOKEN}/pinChatMessage'
+    url = f'https://api.telegram.org/bot6833683094:AAFEfz8GwEw6hphFe59CaHRUzI_Nql3HGMU/pinChatMessage'
     payload = {
         'chat_id': chat_id,
         'message_id': message_id
@@ -84,7 +84,7 @@ def pin_message_to_chat(chat_id, message_id):
     logging.info(f"Response: {response.json()}")
 
 def restrict_user_permissions(chat_id):
-    url = f'https://api.telegram.org/bot{API_TOKEN}/setChatPermissions'
+    url = f'https://api.telegram.org/bot6833683094:AAFEfz8GwEw6hphFe59CaHRUzI_Nql3HGMU/setChatPermissions'
     payload = {
         'chat_id': chat_id,
         'permissions': {
@@ -103,7 +103,7 @@ def restrict_user_permissions(chat_id):
     logging.info(f"Response: {response.json()}")
 
 def restore_user_permissions(chat_id):
-    url = f'https://api.telegram.org/bot{API_TOKEN}/setChatPermissions'
+    url = f'https://api.telegram.org/bot6833683094:AAFEfz8GwEw6hphFe59CaHRUzI_Nql3HGMU/setChatPermissions'
     payload = {
         'chat_id': chat_id,
         'permissions': {
