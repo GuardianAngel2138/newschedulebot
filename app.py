@@ -5,8 +5,12 @@ import requests
 from datetime import datetime
 import os
 from config import API_TOKEN  # Import API_TOKEN from config.py
+import logging
 
 app = Flask(__name__)
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
 
 send_messages = False
 restricted_groups = []
@@ -61,7 +65,9 @@ def send_message(chat_id, text, disable_web_page_preview=False, pin_message=Fals
         'text': text,
         'disable_web_page_preview': disable_web_page_preview
     }
+    logging.info(f"Sending message to {chat_id}: {text}")
     response = requests.post(url, data=payload)
+    logging.info(f"Response: {response.json()}")
     if pin_message:
         message_id = response.json().get('result', {}).get('message_id')
         if message_id:
@@ -73,7 +79,9 @@ def pin_message_to_chat(chat_id, message_id):
         'chat_id': chat_id,
         'message_id': message_id
     }
-    requests.post(url, data=payload)
+    logging.info(f"Pinning message {message_id} to chat {chat_id}")
+    response = requests.post(url, data=payload)
+    logging.info(f"Response: {response.json()}")
 
 def restrict_user_permissions(chat_id):
     url = f'https://api.telegram.org/bot{API_TOKEN}/setChatPermissions'
@@ -90,7 +98,9 @@ def restrict_user_permissions(chat_id):
             'can_pin_messages': False
         }
     }
-    requests.post(url, json=payload)
+    logging.info(f"Restricting permissions for chat {chat_id}")
+    response = requests.post(url, json=payload)
+    logging.info(f"Response: {response.json()}")
 
 def restore_user_permissions(chat_id):
     url = f'https://api.telegram.org/bot{API_TOKEN}/setChatPermissions'
@@ -107,7 +117,9 @@ def restore_user_permissions(chat_id):
             'can_pin_messages': False
         }
     }
-    requests.post(url, json=payload)
+    logging.info(f"Restoring permissions for chat {chat_id}")
+    response = requests.post(url, json=payload)
+    logging.info(f"Response: {response.json()}")
 
 def message_scheduler(message, groups, delay, restrict_permissions, disable_web_page_preview, start_time, end_time):
     global send_messages, first_message_sent, pin_first_message
@@ -133,4 +145,4 @@ def message_scheduler(message, groups, delay, restrict_permissions, disable_web_
         restore_user_permissions(group)
 
 if __name__ == '__main__':
-    app.run(debug=False, port=int(os.environ.get('PORT', 5000)))
+    app.run(debug=False, port=int(os.environ.get('PORT', 5000))) 
