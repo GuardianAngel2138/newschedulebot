@@ -146,15 +146,18 @@ def message_scheduler(message, groups, delay, restrict_permissions, disable_web_
         for group in groups:
             restrict_user_permissions(group)
 
+    logging.info("Starting message sending loop")
     while send_messages and datetime.now().time() < end_time:
         for group in groups:
             if not send_messages:
                 break
+            logging.info(f"Sending scheduled message to group {group}")
             send_message(group, message, disable_web_page_preview, pin_first_message and not first_message_sent)
             if pin_first_message and not first_message_sent:
                 first_message_sent = True
         time.sleep(delay)
 
+    logging.info("Ending message sending loop")
     send_messages = False
     for group in restricted_groups:
         restore_user_permissions(group)
