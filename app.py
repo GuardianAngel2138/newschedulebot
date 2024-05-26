@@ -82,6 +82,28 @@ def send_message(chat_id, text, disable_web_page_preview=False, pin_message=Fals
         if message_id:
             pin_message_to_chat(chat_id, message_id)
 
+def send_message(chat_id, text, disable_web_page_preview=False, pin_message=False):
+    url = f'https://api.telegram.org/bot{API_TOKEN}/sendMessage'
+    payload = {
+        'chat_id': chat_id,
+        'text': text,
+        'disable_web_page_preview': disable_web_page_preview
+    }
+    logging.info(f"Sending message to {chat_id}: {text}")
+    try:
+        response = requests.post(url, data=payload)
+        response_data = response.json()
+        logging.info(f"Response: {response_data}")
+        if not response.ok:
+            logging.error(f"Error sending message: {response_data}")
+
+        if pin_message:
+            message_id = response_data.get('result', {}).get('message_id')
+            if message_id:
+                pin_message_to_chat(chat_id, message_id)
+    except Exception as e:
+        logging.error(f"Exception during send_message: {e}", exc_info=True)
+
 def pin_message_to_chat(chat_id, message_id):
     url = f'https://api.telegram.org/bot{API_TOKEN}/pinChatMessage'
     payload = {
@@ -89,31 +111,15 @@ def pin_message_to_chat(chat_id, message_id):
         'message_id': message_id
     }
     logging.info(f"Pinning message {message_id} to chat {chat_id}")
-    response = requests.post(url, data=payload)
-    logging.info(f"Response: {response.json()}")
-    if not response.ok:
-        logging.error(f"Error pinning message: {response.json()}")
+    try:
+        response = requests.post(url, data=payload)
+        response_data = response.json()
+        logging.info(f"Response: {response_data}")
+        if not response.ok:
+            logging.error(f"Error pinning message: {response_data}")
+    except Exception as e:
+        logging.error(f"Exception during pin_message_to_chat: {e}", exc_info=True)
 
-def restrict_user_permissions(chat_id):
-    url = f'https://api.telegram.org/bot{API_TOKEN}/setChatPermissions'
-    payload = {
-        'chat_id': chat_id,
-        'permissions': {
-            'can_send_messages': False,
-            'can_send_media_messages': False,
-            'can_send_polls': False,
-            'can_send_other_messages': False,
-            'can_add_web_page_previews': False,
-            'can_change_info': False,
-            'can_invite_users': True,
-            'can_pin_messages': False
-        }
-    }
-    logging.info(f"Restricting permissions for chat {chat_id}")
-    response = requests.post(url, json=payload)
-    logging.info(f"Response: {response.json()}")
-    if not response.ok:
-        logging.error(f"Error restricting permissions: {response.json()}")
 
 def restore_user_permissions(chat_id):
     url = f'https://api.telegram.org/bot{API_TOKEN}/setChatPermissions'
