@@ -1,3 +1,4 @@
+import logging
 from flask import Flask, render_template, request, jsonify
 import threading
 import time
@@ -5,11 +6,10 @@ import requests
 from datetime import datetime
 import os
 from config import API_TOKEN  # Import API_TOKEN from config.py
-import logging
 
 app = Flask(__name__)
 
-# Setup logging
+# Configure logging
 logging.basicConfig(level=logging.INFO)
 
 send_messages = False
@@ -24,30 +24,26 @@ def index():
 @app.route('/start_bot', methods=['POST'])
 def start_bot():
     global send_messages, restricted_groups, pin_first_message, first_message_sent
-    try:
-        send_messages = True
-        first_message_sent = False
+    send_messages = True
+    first_message_sent = False
 
-        data = request.get_json()
-        message = data['message']
-        groups = data['groups']
-        delay = int(data['delay'])
-        restrict_permissions = data['restrict_permissions']
-        disable_web_page_preview = data['disable_web_page_preview']
-        pin_first_message = data['pin_first_message']
-        start_time = datetime.strptime(data['start_time'], '%H:%M').time()
-        end_time = datetime.strptime(data['end_time'], '%H:%M').time()
+    data = request.get_json()
+    message = data['message']
+    groups = data['groups']
+    delay = int(data['delay'])
+    restrict_permissions = data['restrict_permissions']
+    disable_web_page_preview = data['disable_web_page_preview']
+    pin_first_message = data['pin_first_message']
+    start_time = datetime.strptime(data['start_time'], '%H:%M').time()
+    end_time = datetime.strptime(data['end_time'], '%H:%M').time()
 
-        logging.info(f"Received start_bot request: message={message}, groups={groups}, delay={delay}, restrict_permissions={restrict_permissions}, disable_web_page_preview={disable_web_page_preview}, pin_first_message={pin_first_message}, start_time={start_time}, end_time={end_time}")
+    restricted_groups = groups if restrict_permissions else []
 
-        restricted_groups = groups if restrict_permissions else []
+    logging.info(f"Received start_bot request: message={message}, groups={groups}, delay={delay}, restrict_permissions={restrict_permissions}, disable_web_page_preview={disable_web_page_preview}, pin_first_message={pin_first_message}, start_time={start_time}, end_time={end_time}")
 
-        threading.Thread(target=message_scheduler, args=(message, groups, delay, restrict_permissions, disable_web_page_preview, start_time, end_time)).start()
+    threading.Thread(target=message_scheduler, args=(message, groups, delay, restrict_permissions, disable_web_page_preview, start_time, end_time)).start()
 
-        return jsonify(status="Bot started")
-    except Exception as e:
-        logging.error(f"Error in start_bot: {e}", exc_info=True)
-        return jsonify(status="Error starting bot", error=str(e)), 500
+    return jsonify(status="Bot started")
 
 @app.route('/stop_bot', methods=['POST'])
 def stop_bot():
@@ -63,24 +59,6 @@ def restore_permissions():
     for group in restricted_groups:
         restore_user_permissions(group)
     return jsonify(status="Permissions restored")
-
-def send_message(chat_id, text, disable_web_page_preview=False, pin_message=False):
-    url = f'https://api.telegram.org/bot{API_TOKEN}/sendMessage'
-    payload = {
-        'chat_id': chat_id,
-        'text': text,
-        'disable_web_page_preview': disable_web_page_preview
-    }
-    logging.info(f"Sending message to {chat_id}: {text}")
-    response = requests.post(url, data=payload)
-    logging.info(f"Response: {response.json()}")
-    if not response.ok:
-        logging.error(f"Error sending message: {response.json()}")
-
-    if pin_message:
-        message_id = response.json().get('result', {}).get('message_id')
-        if message_id:
-            pin_message_to_chat(chat_id, message_id)
 
 def send_message(chat_id, text, disable_web_page_preview=False, pin_message=False):
     url = f'https://api.telegram.org/bot{API_TOKEN}/sendMessage'
@@ -120,6 +98,27 @@ def pin_message_to_chat(chat_id, message_id):
     except Exception as e:
         logging.error(f"Exception during pin_message_to_chat: {e}", exc_info=True)
 
+def restrict_user_permissions(chat_id):
+    url = f'https://api.telegram.org/bot{API_TOKEN}/setChatPermissions'
+    payload = {
+        'chat_id': chat_id,
+        'permissions': {
+            'can_send_messages': False,
+            'can_send_media_messages': False,
+            'can_send_polls': False,
+            'can_send_other_messages': False,
+            'can_add_web_page_previews': False,
+            'can_change_info': False,
+            'can_invite_users': True,
+            'can_pin_messages': False
+        }
+    }
+    logging.info(f"Restricting permissions for chat {chat_id}")
+    try:
+        response = requests.post(url, json=payload)
+        logging.info(f"Response: {response.json()}")
+    except Exception as e:
+        logging.error(f"Exception during restrict_user_permissions: {e}", exc_info=True)
 
 def restore_user_permissions(chat_id):
     url = f'https://api.telegram.org/bot{API_TOKEN}/setChatPermissions'
@@ -137,14 +136,16 @@ def restore_user_permissions(chat_id):
         }
     }
     logging.info(f"Restoring permissions for chat {chat_id}")
-    response = requests.post(url, json=payload)
-    logging.info(f"Response: {response.json()}")
-    if not response.ok:
-        logging.error(f"Error restoring permissions: {response.json()}")
+    try:
+        response = requests.post(url, json=payload)
+        logging.info(f"Response: {response.json()}")
+    except Exception as e:
+        logging.error(f"Exception during restore_user_permissions: {e}", exc_info=True)
 
 def message_scheduler(message, groups, delay, restrict_permissions, disable_web_page_preview, start_time, end_time):
     global send_messages, first_message_sent, pin_first_message
 
+    logging.info(f"Scheduler started: waiting for start time {start_time}")
     while datetime.now().time() < start_time:
         time.sleep(1)
 
@@ -163,7 +164,7 @@ def message_scheduler(message, groups, delay, restrict_permissions, disable_web_
                 first_message_sent = True
         time.sleep(delay)
 
-    logging.info("Ending message sending loop")
+    logging.info("Message sending loop ended")
     send_messages = False
     for group in restricted_groups:
         restore_user_permissions(group)
