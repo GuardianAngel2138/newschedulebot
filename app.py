@@ -24,24 +24,30 @@ def index():
 @app.route('/start_bot', methods=['POST'])
 def start_bot():
     global send_messages, restricted_groups, pin_first_message, first_message_sent
-    send_messages = True
-    first_message_sent = False
+    try:
+        send_messages = True
+        first_message_sent = False
 
-    data = request.get_json()
-    message = data['message']
-    groups = data['groups']
-    delay = int(data['delay'])
-    restrict_permissions = data['restrict_permissions']
-    disable_web_page_preview = data['disable_web_page_preview']
-    pin_first_message = data['pin_first_message']
-    start_time = datetime.strptime(data['start_time'], '%H:%M').time()
-    end_time = datetime.strptime(data['end_time'], '%H:%M').time()
+        data = request.get_json()
+        message = data['message']
+        groups = data['groups']
+        delay = int(data['delay'])
+        restrict_permissions = data['restrict_permissions']
+        disable_web_page_preview = data['disable_web_page_preview']
+        pin_first_message = data['pin_first_message']
+        start_time = datetime.strptime(data['start_time'], '%H:%M').time()
+        end_time = datetime.strptime(data['end_time'], '%H:%M').time()
 
-    restricted_groups = groups if restrict_permissions else []
+        logging.info(f"Received start_bot request: message={message}, groups={groups}, delay={delay}, restrict_permissions={restrict_permissions}, disable_web_page_preview={disable_web_page_preview}, pin_first_message={pin_first_message}, start_time={start_time}, end_time={end_time}")
 
-    threading.Thread(target=message_scheduler, args=(message, groups, delay, restrict_permissions, disable_web_page_preview, start_time, end_time)).start()
+        restricted_groups = groups if restrict_permissions else []
 
-    return jsonify(status="Bot started")
+        threading.Thread(target=message_scheduler, args=(message, groups, delay, restrict_permissions, disable_web_page_preview, start_time, end_time)).start()
+
+        return jsonify(status="Bot started")
+    except Exception as e:
+        logging.error(f"Error in start_bot: {e}", exc_info=True)
+        return jsonify(status="Error starting bot", error=str(e)), 500
 
 @app.route('/stop_bot', methods=['POST'])
 def stop_bot():
@@ -59,7 +65,7 @@ def restore_permissions():
     return jsonify(status="Permissions restored")
 
 def send_message(chat_id, text, disable_web_page_preview=False, pin_message=False):
-    url = f'https://api.telegram.org/bot6833683094:AAFEfz8GwEw6hphFe59CaHRUzI_Nql3HGMU/sendMessage'
+    url = f'https://api.telegram.org/bot{API_TOKEN}/sendMessage'
     payload = {
         'chat_id': chat_id,
         'text': text,
@@ -68,13 +74,16 @@ def send_message(chat_id, text, disable_web_page_preview=False, pin_message=Fals
     logging.info(f"Sending message to {chat_id}: {text}")
     response = requests.post(url, data=payload)
     logging.info(f"Response: {response.json()}")
+    if not response.ok:
+        logging.error(f"Error sending message: {response.json()}")
+
     if pin_message:
         message_id = response.json().get('result', {}).get('message_id')
         if message_id:
             pin_message_to_chat(chat_id, message_id)
 
 def pin_message_to_chat(chat_id, message_id):
-    url = f'https://api.telegram.org/bot6833683094:AAFEfz8GwEw6hphFe59CaHRUzI_Nql3HGMU/pinChatMessage'
+    url = f'https://api.telegram.org/bot{API_TOKEN}/pinChatMessage'
     payload = {
         'chat_id': chat_id,
         'message_id': message_id
@@ -82,9 +91,11 @@ def pin_message_to_chat(chat_id, message_id):
     logging.info(f"Pinning message {message_id} to chat {chat_id}")
     response = requests.post(url, data=payload)
     logging.info(f"Response: {response.json()}")
+    if not response.ok:
+        logging.error(f"Error pinning message: {response.json()}")
 
 def restrict_user_permissions(chat_id):
-    url = f'https://api.telegram.org/bot6833683094:AAFEfz8GwEw6hphFe59CaHRUzI_Nql3HGMU/setChatPermissions'
+    url = f'https://api.telegram.org/bot{API_TOKEN}/setChatPermissions'
     payload = {
         'chat_id': chat_id,
         'permissions': {
@@ -101,9 +112,11 @@ def restrict_user_permissions(chat_id):
     logging.info(f"Restricting permissions for chat {chat_id}")
     response = requests.post(url, json=payload)
     logging.info(f"Response: {response.json()}")
+    if not response.ok:
+        logging.error(f"Error restricting permissions: {response.json()}")
 
 def restore_user_permissions(chat_id):
-    url = f'https://api.telegram.org/bot6833683094:AAFEfz8GwEw6hphFe59CaHRUzI_Nql3HGMU/setChatPermissions'
+    url = f'https://api.telegram.org/bot{API_TOKEN}/setChatPermissions'
     payload = {
         'chat_id': chat_id,
         'permissions': {
@@ -120,6 +133,8 @@ def restore_user_permissions(chat_id):
     logging.info(f"Restoring permissions for chat {chat_id}")
     response = requests.post(url, json=payload)
     logging.info(f"Response: {response.json()}")
+    if not response.ok:
+        logging.error(f"Error restoring permissions: {response.json()}")
 
 def message_scheduler(message, groups, delay, restrict_permissions, disable_web_page_preview, start_time, end_time):
     global send_messages, first_message_sent, pin_first_message
@@ -145,4 +160,4 @@ def message_scheduler(message, groups, delay, restrict_permissions, disable_web_
         restore_user_permissions(group)
 
 if __name__ == '__main__':
-    app.run(debug=False, port=int(os.environ.get('PORT', 5000))) 
+    app.run(debug=False, port=int(os.environ.get('PORT', 5000)))
