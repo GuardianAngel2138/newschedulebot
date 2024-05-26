@@ -4,9 +4,9 @@ import time
 import requests
 from datetime import datetime
 import os
+from config import API_TOKEN  # Import API_TOKEN from config.py
 
 app = Flask(__name__)
-bot_token = os.environ.get('API_TOKEN')
 
 send_messages = False
 restricted_groups = []
@@ -55,7 +55,7 @@ def restore_permissions():
     return jsonify(status="Permissions restored")
 
 def send_message(chat_id, text, disable_web_page_preview=False, pin_message=False):
-    url = f'https://api.telegram.org/bot{bot_token}/sendMessage'
+    url = f'https://api.telegram.org/bot{API_TOKEN}/sendMessage'
     payload = {
         'chat_id': chat_id,
         'text': text,
@@ -68,7 +68,7 @@ def send_message(chat_id, text, disable_web_page_preview=False, pin_message=Fals
             pin_message_to_chat(chat_id, message_id)
 
 def pin_message_to_chat(chat_id, message_id):
-    url = f'https://api.telegram.org/bot{bot_token}/pinChatMessage'
+    url = f'https://api.telegram.org/bot{API_TOKEN}/pinChatMessage'
     payload = {
         'chat_id': chat_id,
         'message_id': message_id
@@ -76,7 +76,7 @@ def pin_message_to_chat(chat_id, message_id):
     requests.post(url, data=payload)
 
 def restrict_user_permissions(chat_id):
-    url = f'https://api.telegram.org/bot{bot_token}/setChatPermissions'
+    url = f'https://api.telegram.org/bot{API_TOKEN}/setChatPermissions'
     payload = {
         'chat_id': chat_id,
         'permissions': {
@@ -93,7 +93,7 @@ def restrict_user_permissions(chat_id):
     requests.post(url, json=payload)
 
 def restore_user_permissions(chat_id):
-    url = f'https://api.telegram.org/bot{bot_token}/setChatPermissions'
+    url = f'https://api.telegram.org/bot{API_TOKEN}/setChatPermissions'
     payload = {
         'chat_id': chat_id,
         'permissions': {
@@ -134,4 +134,3 @@ def message_scheduler(message, groups, delay, restrict_permissions, disable_web_
 
 if __name__ == '__main__':
     app.run(debug=False, port=int(os.environ.get('PORT', 5000)))
-
