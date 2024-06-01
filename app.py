@@ -179,5 +179,5 @@ def message_scheduler(message, groups, delay, restrict_permissions, disable_web_
     for group in restricted_groups:
         restore_user_permissions(group)
 
-if __name__ == '__main__':
+if __name__ == '__app__':
     app.run(debug=False, port=int(os.environ.get('PORT', 5000)))
