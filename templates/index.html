@@ -49,6 +49,26 @@
                 <input type="time" class="form-control" id="end_time" required>
             </div>
             <div class="form-group">
+                <label for="time_zone">Time Zone</label>
+                <select class="form-control" id="time_zone">
+                    <!-- Comprehensive list of time zones -->
+                    <option value="GMT" selected>GMT</option>
+                    <option value="UTC">UTC</option>
+                    <option value="Europe/London">Europe/London</option>
+                    <option value="America/New_York">America/New_York</option>
+                    <option value="America/Los_Angeles">America/Los_Angeles</option>
+                    <option value="Asia/Tokyo">Asia/Tokyo</option>
+                    <option value="Asia/Kolkata">Asia/Kolkata</option>
+                    <option value="Australia/Sydney">Australia/Sydney</option>
+                    <option value="Europe/Paris">Europe/Paris</option>
+                    <option value="America/Chicago">America/Chicago</option>
+                    <option value="America/Denver">America/Denver</option>
+                    <option value="Asia/Shanghai">Asia/Shanghai</option>
+                    <option value="Asia/Singapore">Asia/Singapore</option>
+                    <!-- Add more time zones as needed -->
+                </select>
+            </div>
+            <div class="form-group">
                 <label for="delay">Delay between messages (seconds)</label>
                 <input type="number" class="form-control" id="delay" required>
             </div>
@@ -100,6 +120,7 @@
                 const groups = $('.group-id').map(function() { return $(this).val().trim(); }).get().slice(0, 10);
                 const start_time = $('#start_time').val();
                 const end_time = $('#end_time').val();
+                const time_zone = $('#time_zone').val();
                 const delay = $('#delay').val();
                 const restrict_permissions = $('#restrict_permissions').val() === 'true';
                 const disable_web_page_preview = $('#disable_web_page_preview').val() === 'true';
@@ -109,7 +130,7 @@
                     url: '/start_bot',
                     method: 'POST',
                     contentType: 'application/json',
-                    data: JSON.stringify({ message, groups, start_time, end_time, delay, restrict_permissions, disable_web_page_preview, pin_first_message }),
+                    data: JSON.stringify({ message, groups, start_time, end_time, time_zone, delay, restrict_permissions, disable_web_page_preview, pin_first_message }),
                     success: function(response) {
                         showPopup(response.status);
                     }
