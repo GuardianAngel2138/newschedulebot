@@ -1,4 +1,4 @@
-import logging 1
+import logging
 from flask import Flask, render_template, request, jsonify
 import threading
 import time
